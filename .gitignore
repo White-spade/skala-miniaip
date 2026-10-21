@@ -1,0 +1,25 @@
+# 폐기 코드
+/폐기/
+/폐기1/
+/폐기2/
+/폐기3/
+
+# Python 가상환경
+.venv/
+venv/
+
+# Python 캐시
+__pycache__/
+*.pyc
+
+# 환경변수 및 인증정보
+.env
+.env.*
+!.env.example
+
+# macOS
+.DS_Store
+
+# IDE
+.vscode/
+.idea/
