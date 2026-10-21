@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>AIOps Agent</title>
+</head>
+<body>
+    <h2>AIOps Agent 테스트</h2>
+
+    <textarea id="query" rows="4" cols="60">payments-service가 느린 원인을 조사해줘</textarea>
+
+    <button onclick="sendRequest()">전송</button>
+
+    <pre id="output"></pre>
+
+    <script>
+        async function sendRequest() {
+            const query = document.getElementById("query").value;
+            const output = document.getElementById("output");
+
+            output.textContent = "Agent 실행 중...";
+
+            try {
+                const response = await fetch(
+                    "http://127.0.0.1:8000/chat",
+                    {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json"
+                        },
+                        body: JSON.stringify({query: query})
+                    }
+                );
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    output.textContent =
+                        `HTTP ${response.status}\n` +
+                        JSON.stringify(data, null, 2);
+                    return;
+                }
+
+                output.textContent =
+                    `분류: ${data.intent}\n\n${data.result}`;
+
+            } catch (error) {
+                output.textContent = `요청 실패: ${error.message}`;
+            }
+        }
+    </script>
+</body>
+</html>
