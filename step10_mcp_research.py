@@ -107,7 +107,7 @@ builder.add_edge("research", END)
 builder.add_edge("chat", END)
 
 graph = builder.compile()
-graph.get_graph().draw_mermaid_png(output_file_path="step10_graph.png")
+#graph.get_graph().draw_mermaid_png(output_file_path="step10_graph.png")
 
 
 # 실행
