@@ -13,18 +13,15 @@ def get_monitoring_status(system_name):
     return monitoring.get(system_name)
 
 
-# 사용자 입력
-system_name = input("조회할 서비스 이름: ")
+if __name__ == "__main__":
+    system_name = input("조회할 서비스 이름: ")
+    result = get_monitoring_status(system_name)
 
-# 모니터링 조회
-result = get_monitoring_status(system_name)
-
-# 결과 출력
-if result is None:
-    print("등록되지 않은 서비스입니다.")
-else:
-    print(f"서비스: {system_name}")
-    print(f"상태: {result['status']}")
-    print(f"CPU: {result['cpu_base']}%")
-    print(f"Memory: {result['memory_base']}%")
-    print(f"알림: {result['alerts']}")
+    if result is None:
+        print("등록되지 않은 서비스입니다.")
+    else:
+        print(f"서비스: {system_name}")
+        print(f"상태: {result['status']}")
+        print(f"CPU: {result['cpu_base']}%")
+        print(f"Memory: {result['memory_base']}%")
+        print(f"알림: {result['alerts']}")
