@@ -26,3 +26,5 @@ __pycache__/
 
 # 터미널 실행 기록
 terminal_history*.txt
+
+step21_sessions.db*

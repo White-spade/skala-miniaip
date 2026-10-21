@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>STEP 21 · SQLite Session</title>
+  <style>
+    body { max-width: 780px; margin: 45px auto; padding: 0 16px; font: 15px/1.6 system-ui, sans-serif; }
+    #history { border: 1px solid #ccc; padding: 14px; height: 430px; overflow-y: auto; white-space: pre-wrap; }
+    .message { margin: 0 0 16px; padding-bottom: 12px; border-bottom: 1px solid #eee; }
+    .user { font-weight: bold; }
+    .agent { white-space: pre-wrap; }
+    .row { display: flex; gap: 8px; margin-top: 12px; }
+    input { flex: 1; padding: 10px; }
+    button { padding: 10px 15px; cursor: pointer; }
+    small { overflow-wrap: anywhere; }
+  </style>
+</head>
+<body>
+  <h2>STEP 21 · SQLite Session</h2>
+  <p><small>세션 ID: <span id="session-id">불러오는 중...</span></small></p>
+  <p><button id="new-session">새 세션</button> <button id="reset">현재 세션 초기화</button></p>
+  <div id="history" aria-live="polite"></div>
+  <div class="row">
+    <input id="query" placeholder="서버가 느려요 / 3 / 그 서비스 메모리도 확인해줘" maxlength="500">
+    <button id="send">전송</button>
+  </div>
+  <p><small id="status">준비 중</small></p>
+
+  <script>
+    const api = "http://127.0.0.1:8000";
+    const history = document.querySelector("#history");
+    const queryInput = document.querySelector("#query");
+    const status = document.querySelector("#status");
+    let sessionId = localStorage.getItem("ai-minip-step21-session");
+    let busy = false;
+
+    async function newSession() {
+      const response = await fetch(`${api}/session`, { method: "POST" });
+      if (!response.ok) throw new Error("세션 생성 실패");
+      const data = await response.json();
+      sessionId = data.session_id;
+      localStorage.setItem("ai-minip-step21-session", sessionId);
+      document.querySelector("#session-id").textContent = sessionId;
+      history.replaceChildren();
+      status.textContent = "새 세션 준비 완료";
+    }
+
+    function addMessage(role, body) {
+      const el = document.createElement("div");
+      el.className = "message";
+      const header = document.createElement("div");
+      header.className = role === "사용자" ? "user" : "";
+      header.textContent = role;
+      const content = document.createElement("div");
+      content.className = "agent";
+      content.textContent = body;
+      el.append(header, content);
+      history.append(el);
+      history.scrollTop = history.scrollHeight;
+    }
+
+    async function send(text) {
+      if (busy || !text.trim()) return;
+      busy = true;
+      document.querySelector("#send").disabled = true;
+      status.textContent = "처리 중...";
+      addMessage("사용자", text);
+      try {
+        const response = await fetch(`${api}/chat`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ session_id: sessionId, query: text })
+        });
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        const data = await response.json();
+        addMessage("Agent", data.result);
+        status.textContent = data.awaiting_clarification
+          ? `서비스 확인 대기 중 (오류 ${data.clarification_attempts}/3)`
+          : `완료 · 최근 대상: ${data.last_targets.join(", ") || "없음"}`;
+      } catch (err) {
+        addMessage("오류", String(err));
+        status.textContent = "요청 실패";
+      } finally {
+        busy = false;
+        document.querySelector("#send").disabled = false;
+        queryInput.focus();
+      }
+    }
+
+    document.querySelector("#send").onclick = () => {
+      const text = queryInput.value;
+      queryInput.value = "";
+      send(text);
+    };
+    queryInput.addEventListener("keydown", (event) => {
+      if (event.key === "Enter") document.querySelector("#send").click();
+    });
+    document.querySelector("#reset").onclick = () => {
+      if (!busy) send("/reset");
+    };
+    document.querySelector("#new-session").onclick = async () => {
+      if (!busy) {
+        try { await newSession(); }
+        catch (err) { status.textContent = String(err); }
+      }
+    };
+    (async () => {
+      try {
+        if (!sessionId) await newSession();
+        else {
+          document.querySelector("#session-id").textContent = sessionId;
+          status.textContent = "기존 세션 ID로 복원 준비 완료";
+        }
+      } catch (err) { status.textContent = String(err); }
+    })();
+  </script>
+</body>
+</html>
