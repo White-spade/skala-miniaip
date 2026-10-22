@@ -62,6 +62,7 @@ builder.add_conditional_edges("grounding_agent", semantic_route, {
 builder.add_edge("semantic_validation", END)
 
 graph = builder.compile()
+#graph.get_graph(xray=True).draw_mermaid_png(output_file_path="step24_graph.png")
 
 
 @traceable(name="aiops_integrated_request")
@@ -71,7 +72,7 @@ async def run_agent(query: str):
 
 async def main():
     print("\n=== LangGraph 구조 (Mermaid) ===")
-    print(graph.get_graph(xray=True).draw_mermaid())
+    #print(graph.get_graph(xray=True).draw_mermaid())
 
     query = input("요청: ").strip()
     result = await run_agent(query)
