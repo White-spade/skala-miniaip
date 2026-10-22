@@ -5,10 +5,11 @@ import logging
 import os
 
 from dotenv import load_dotenv
-from langgraph.graph import StateGraph, START, END
 
 load_dotenv()
 
+from langgraph.graph import StateGraph, START, END  # noqa: E402
+from langsmith import traceable  # noqa: E402
 from step22_grounding import AgentState as BaseAgentState, graph as grounding_graph  # noqa: E402
 from step18_replan_validate import validate_node as llm_validate_node  # noqa: E402
 
@@ -63,9 +64,17 @@ builder.add_edge("semantic_validation", END)
 graph = builder.compile()
 
 
+@traceable(name="aiops_integrated_request")
+async def run_agent(query: str):
+    return await graph.ainvoke({"user_input": query})
+
+
 async def main():
+    print("\n=== LangGraph 구조 (Mermaid) ===")
+    print(graph.get_graph(xray=True).draw_mermaid())
+
     query = input("요청: ").strip()
-    result = await graph.ainvoke({"user_input": query})
+    result = await run_agent(query)
     print("\n" + result.get("result", "응답 없음"))
     print("Grounding 통과:", result.get("validation_passed", "해당 없음"))
     print("LLM 의미 검증:", result.get("semantic_validation_passed", "실행 안 함"))

@@ -1,0 +1,527 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <title>AIOps Agent | Integration Console</title>
+  <style>
+    :root {
+      --navy: #101b2a;
+      --navy-soft: #17283b;
+      --teal: #1d8f88;
+      --teal-light: #e3f5f1;
+      --ink: #172536;
+      --muted: #738194;
+      --border: #e4e9ee;
+      --paper: #ffffff;
+      --bg: #f5f7f9;
+      --danger: #c74444;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
+      color: var(--ink);
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: var(--bg); min-height: 100vh; }
+    button, input, textarea { font: inherit; }
+    button { cursor: pointer; }
+    button:disabled { cursor: not-allowed; opacity: .48; }
+    button:focus-visible, input:focus-visible, textarea:focus-visible { outline: 3px solid #65c8b9; outline-offset: 2px; }
+    .app { display: grid; grid-template-columns: 288px minmax(0, 1fr); min-height: 100vh; }
+
+    .sidebar { background: var(--navy); color: #eef6f7; padding: 29px 22px; display: flex; flex-direction: column; gap: 27px; min-width: 0; }
+    .brand { display: flex; align-items: center; gap: 12px; }
+    .brand-icon { width: 43px; height: 43px; border-radius: 14px; background: #234d54; display: grid; place-items: center; font-weight: 800; font-size: 20px; color: #9ee5d7; }
+    .brand-name { font-size: 19px; font-weight: 760; letter-spacing: -.55px; }
+    .brand-sub { font-size: 11px; color: #a6b9ca; margin-top: 3px; letter-spacing: .3px; }
+    .side-label { color: #90a8ba; font-size: 10px; font-weight: 800; letter-spacing: 1.6px; text-transform: uppercase; margin-bottom: 13px; }
+    .sidebar-card { background: var(--navy-soft); border: 1px solid #2a4154; border-radius: 17px; padding: 17px; }
+    .side-value { font-size: 14px; font-weight: 700; overflow-wrap: anywhere; }
+    .sid { font: 11px/1.7 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; color: #c1d8e1; overflow-wrap: anywhere; margin: 8px 0 13px; }
+    .tiny { font-size: 11px; color: #aec0cd; line-height: 1.6; }
+    .side-row { display: flex; align-items: center; gap: 9px; }
+    .side-button { border: 1px solid #416174; background: transparent; color: #e6f2f3; border-radius: 9px; padding: 9px 11px; font-size: 12px; font-weight: 650; }
+    .side-button:hover:not(:disabled) { background: #254056; }
+    .side-button.primary { background: #245957; border-color: #357c76; color: #ddffef; }
+    .side-button.primary:hover:not(:disabled) { background: #2c716c; }
+    .side-actions { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 13px; }
+    .sid-input { display: block; width: 100%; border: 1px solid #416174; background: #0d1d2d; color: #f3f7fa; padding: 10px 9px; border-radius: 9px; font: 11px ui-monospace, monospace; margin-top: 9px; }
+    .side-help { font-size: 11px; line-height: 1.65; color: #9aafc1; }
+    .sidebar-bottom { margin-top: auto; }
+    .user-dot { width: 9px; height: 9px; background: #73d8bc; border-radius: 50%; box-shadow: 0 0 0 3px #73d8bc22; flex: none; }
+    .target-chip { display: inline-block; max-width: 100%; margin: 4px 4px 0 0; padding: 5px 9px; border-radius: 7px; font-size: 11px; color: #a8ede1; background: #22504d; overflow-wrap: anywhere; }
+
+    .workspace { min-width: 0; display: flex; flex-direction: column; height: 100vh; }
+    .topbar { min-height: 108px; padding: 26px 44px 22px; border-bottom: 1px solid var(--border); background: rgba(255,255,255,.92); display: flex; align-items: center; justify-content: space-between; gap: 15px; }
+    .eyebrow { color: var(--teal); font-size: 10px; font-weight: 850; letter-spacing: 2px; text-transform: uppercase; }
+    h1 { font-size: clamp(21px, 2.3vw, 29px); letter-spacing: -.9px; margin: 6px 0 0; line-height: 1.2; }
+    .server-indicator { display: inline-flex; align-items: center; gap: 8px; padding: 9px 12px; border: 1px solid #dce5ea; border-radius: 24px; background: #fff; font-size: 12px; color: #5f6d7d; white-space: nowrap; }
+    .server-led { background: #a9b5c1; width: 7px; height: 7px; border-radius: 50%; }
+    .server-indicator.online .server-led { background: #3bbd8d; }
+    .server-indicator.offline .server-led { background: #e57777; }
+    .workspace-body { flex: 1; min-height: 0; overflow-y: auto; padding: 28px 44px 18px; scroll-behavior: smooth; }
+    .thread { max-width: 900px; margin: 0 auto; }
+    .hero { margin: 29px 0 40px; padding: 34px 34px 29px; background: linear-gradient(120deg, #f0f9f7 0%, #f8fbfd 85%); border: 1px solid #e1efec; border-radius: 20px; }
+    .hero h2 { font-size: 25px; margin: 11px 0 8px; letter-spacing: -.8px; }
+    .hero p { color: #607385; line-height: 1.8; font-size: 13px; margin: 0 0 21px; }
+    .workflow { display: flex; flex-wrap: wrap; gap: 7px; }
+    .flow-tag { font-size: 11px; padding: 7px 10px; background: #fff; border: 1px solid #dceae7; border-radius: 9px; color: #446e68; font-weight: 650; }
+    .msg { display: flex; gap: 13px; margin-bottom: 27px; align-items: flex-start; }
+    .msg.user { justify-content: flex-end; }
+    .avatar { width: 33px; height: 33px; border-radius: 11px; display: grid; place-items: center; flex: none; background: #dff2ee; color: #177c72; font-size: 12px; font-weight: 850; }
+    .msg-main { min-width: 0; max-width: min(100%, 760px); }
+    .msg-head { font-size: 11px; color: #8897a4; font-weight: 750; margin: 0 0 8px 2px; }
+    .msg.user .msg-head { text-align: right; }
+    .bubble { background: #fff; border: 1px solid #e1e7ed; padding: 19px 21px; border-radius: 5px 17px 17px 17px; font-size: 13px; line-height: 1.83; box-shadow: 0 5px 18px #192b3c06; overflow-wrap: anywhere; }
+    .msg.user .bubble { border-radius: 17px 5px 17px 17px; background: #203b4d; color: #effafd; border-color: #203b4d; padding: 13px 18px; white-space: pre-wrap; }
+    .bubble h2 { font-size: 18px; line-height: 1.4; margin: 3px 0 17px; letter-spacing: -.45px; }
+    .bubble h3 { font-size: 14px; margin: 19px 0 8px; color: #1e645d; }
+    .bubble p { margin: 8px 0; white-space: pre-wrap; }
+    .bubble ul, .bubble ol { margin: 8px 0 12px; padding-left: 23px; }
+    .bubble li { margin: 5px 0; white-space: pre-wrap; }
+    .bubble code { background: #eef4f5; color: #336e69; border-radius: 5px; padding: 1px 5px; font: 12px/1.6 ui-monospace, SFMono-Regular, Menlo, monospace; }
+    .bubble pre { background: #182b3a; color: #d6e9eb; border-radius: 11px; padding: 16px; overflow-x: auto; white-space: pre-wrap; font: 12px/1.7 ui-monospace, Menlo, monospace; }
+    .bubble pre code { background: none; color: inherit; padding: 0; }
+    .source-ref { display: inline-block; font: 700 10px ui-monospace, monospace; padding: 3px 6px; background: #e3f4f0; color: #17786b; border-radius: 5px; vertical-align: 1px; }
+    .msg-actions { display: flex; justify-content: flex-end; padding-top: 8px; }
+    .text-button { background: none; color: #7e90a0; border: 0; font-size: 11px; padding: 4px; }
+    .text-button:hover { color: #158c84; }
+    .system-note { margin: 18px auto 22px; text-align: center; color: #718292; font-size: 12px; background: #e8edf1; width: fit-content; padding: 8px 13px; border-radius: 99px; }
+    .attention { font-size: 11px; color: #9a6230; background: #fff4e8; border: 1px solid #f0d9bd; padding: 10px 13px; border-radius: 10px; margin: 8px 0 22px 46px; width: fit-content; }
+    .loading { display: flex; align-items: center; gap: 10px; color: #6d8190; font-size: 12px; margin: 12px 0 25px 47px; }
+    .spinner { width: 17px; height: 17px; border: 2px solid #d4e9e5; border-top-color: #22998d; border-radius: 50%; animation: spin 1s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .composer-shell { background: linear-gradient(0deg, #f5f7f9 80%, #f5f7f900); border-top: 1px solid var(--border); padding: 17px 44px 23px; }
+    .composer { max-width: 900px; margin: auto; display: flex; align-items: flex-end; gap: 12px; background: #fff; padding: 10px 11px 10px 17px; border: 1px solid #d6e0e7; box-shadow: 0 8px 28px #1c2c3908; border-radius: 17px; }
+    #query { resize: none; min-height: 49px; max-height: 130px; flex: 1; border: none; outline: none; padding: 11px 0 7px; color: #142838; background: transparent; font-size: 13px; line-height: 1.6; }
+    #query:focus-visible { outline: none; }
+    #query::placeholder { color: #99a4ae; }
+    #send { border: none; background: #18897f; color: white; border-radius: 11px; height: 43px; min-width: 76px; font-weight: 720; font-size: 12px; }
+    #send:hover:not(:disabled) { background: #116e66; }
+    .composer-hint { max-width: 900px; margin: 8px auto 0; display: flex; justify-content: space-between; gap: 8px; font-size: 10px; color: #90a0ac; }
+    .example-list { max-width: 900px; margin: 17px auto 0; display: flex; gap: 8px; flex-wrap: wrap; }
+    .example { border: 1px solid #dce6eb; background: #fff; color: #566a7b; border-radius: 8px; font-size: 11px; padding: 8px 12px; }
+    .example:hover { border-color: #52aca4; color: #197b72; }
+
+    .login-overlay { position: fixed; inset: 0; z-index: 30; background: #0b1728ee; display: flex; align-items: center; justify-content: center; padding: 24px; }
+    .login-overlay.hidden { display: none; }
+    .login-box { width: min(100%, 430px); background: #fff; border-radius: 24px; padding: 38px; box-shadow: 0 32px 90px #0004; }
+    .login-mark { width: 49px; height: 49px; display: grid; place-items: center; background: #dff4ed; border-radius: 14px; color: #138176; font-size: 23px; font-weight: 850; }
+    .login-box h2 { margin: 20px 0 7px; font-size: 27px; letter-spacing: -.8px; }
+    .login-box p { font-size: 12px; color: #718396; line-height: 1.8; margin: 0 0 21px; }
+    .form-label { display: block; font-size: 11px; color: #5e6e80; font-weight: 700; margin: 17px 0 7px; }
+    .form-input { display: block; width: 100%; padding: 13px 14px; border-radius: 10px; border: 1px solid #d8e1e6; outline: none; font-size: 13px; }
+    .login-submit { margin-top: 22px; width: 100%; border: 0; border-radius: 11px; background: #18897f; color: #fff; font-weight: 740; padding: 14px; }
+    #login-error { min-height: 15px; color: var(--danger); font-size: 12px; margin-top: 12px; }
+    .footnote { text-align: center; margin-top: 16px; font-size: 11px; color: #8e9ba7; line-height: 1.7; }
+    @media (max-width: 900px) {
+      .app { grid-template-columns: 235px minmax(0, 1fr); }
+      .sidebar { padding: 24px 15px; }
+      .topbar { padding: 22px; min-height: 91px; }
+      .workspace-body { padding: 23px 21px; }
+      .composer-shell { padding: 14px 21px 19px; }
+      .hero { padding: 25px; }
+    }
+    @media (max-width: 650px) {
+      .app { display: flex; flex-direction: column; }
+      .sidebar { gap: 14px; padding: 14px 16px; }
+      .brand { margin-bottom: 0; }
+      .sidebar-card { padding: 11px 14px; }
+      .sidebar-bottom { margin-top: 0; }
+      .side-label, .side-help { display: none; }
+      .workspace { height: min(78vh, 900px); min-height: 590px; }
+      .topbar { min-height: 78px; padding: 15px; }
+      .topbar h1 { font-size: 19px; }
+      .server-indicator { font-size: 0; padding: 9px; }
+      .server-led { width: 10px; height: 10px; }
+      .workspace-body { padding: 12px 13px; }
+      .hero { margin-top: 10px; padding: 22px 18px; }
+      .composer-shell { padding: 10px 12px 17px; }
+      .login-box { padding: 27px; }
+    }
+    [hidden] { display: none !important; }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <aside class="sidebar" aria-label="세션 관리">
+      <div class="brand">
+        <div class="brand-icon">A</div>
+        <div>
+          <div class="brand-name">AIOps Agent</div>
+          <div class="brand-sub">INTEGRATION · STEP 24</div>
+        </div>
+      </div>
+
+      <section class="sidebar-card">
+        <div class="side-label">Authenticated User</div>
+        <div class="side-row"><span class="user-dot"></span><span class="side-value" id="username">로그인 필요</span></div>
+        <div class="side-actions"><button type="button" class="side-button" id="logout" disabled>로그아웃</button></div>
+      </section>
+
+      <section class="sidebar-card">
+        <div class="side-label">Active Session</div>
+        <div class="side-value">SQLite Context</div>
+        <div class="sid" id="session-id">세션 없음</div>
+        <div class="tiny" id="session-state">로그인 후 세션을 생성합니다.</div>
+        <div class="side-actions">
+          <button type="button" id="copy-id" class="side-button" disabled>번호 복사</button>
+          <button type="button" id="new-session" class="side-button primary" disabled>새 세션</button>
+          <button type="button" id="reset" class="side-button" disabled>맥락 초기화</button>
+        </div>
+        <input class="sid-input" type="text" id="existing-id" placeholder="기존 세션 ID (32자리)" spellcheck="false" autocomplete="off" maxlength="32" aria-label="기존 세션 ID">
+        <div class="side-actions"><button type="button" id="use-existing" class="side-button" disabled>기존 세션 연결</button></div>
+        <div class="side-help">기존 ID는 다음 채팅 요청에서 서버가 소유권을 확인합니다. 전체 대화 기록은 이 화면에 복원되지 않습니다.</div>
+      </section>
+
+      <section class="sidebar-card">
+        <div class="side-label">Last Confirmed Target</div>
+        <div id="targets" class="tiny">아직 확인된 서비스 없음</div>
+      </section>
+
+      <div class="sidebar-bottom side-help">MCP stdio · LangGraph ReAct · Grounding<br>Semantic Validation은 서버 설정에 따릅니다.</div>
+    </aside>
+
+    <main class="workspace">
+      <header class="topbar">
+        <div>
+          <div class="eyebrow">Incident Investigation Workspace</div>
+          <h1>장애 조사 콘솔</h1>
+        </div>
+        <div class="server-indicator" id="server-state" title="FastAPI 연결 상태"><i class="server-led"></i><span id="server-label">연결 확인 중</span></div>
+      </header>
+
+      <div class="workspace-body" id="workspace-body">
+        <div class="thread" id="thread" aria-live="polite">
+          <div class="hero" id="hero">
+            <div class="eyebrow">Operational Intelligence</div>
+            <h2>모니터링부터 근거 검증까지.</h2>
+            <p>서비스 장애를 자연어로 요청하세요. Agent가 필요한 MCP 도구를 조회하고,<br>등록 서비스를 확인한 뒤 관측 결과와 출처를 정리합니다.</p>
+            <div class="workflow">
+              <span class="flow-tag">01 · Clarification</span>
+              <span class="flow-tag">02 · ReAct / MCP</span>
+              <span class="flow-tag">03 · Python Grounding</span>
+              <span class="flow-tag">04 · Optional LLM Validation</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="composer-shell">
+        <div class="example-list">
+          <button class="example" data-example="payments-service가 느려요" type="button">payments-service 상태 조사</button>
+          <button class="example" data-example="서버가 느린 것 같아" type="button">불명확한 요청 테스트</button>
+          <button class="example" data-example="그 서비스 메모리도 확인해줘" type="button">멀티턴 후속 질문</button>
+        </div>
+        <div class="composer">
+          <textarea id="query" rows="2" maxlength="500" disabled placeholder="로그인 후 장애 조사 요청을 입력하세요."></textarea>
+          <button type="button" id="send" disabled>전송 ↗</button>
+        </div>
+        <div class="composer-hint"><span id="hint">JWT 인증 후 요청을 보낼 수 있습니다.</span><span id="counter">0 / 500</span></div>
+      </div>
+    </main>
+  </div>
+
+  <div class="login-overlay" id="login-overlay">
+    <form class="login-box" id="login-form">
+      <div class="login-mark">A</div>
+      <h2>Agent Console</h2>
+      <p>STEP 23의 OAuth2 Password + JWT 인증을 사용합니다.<br>사전에 생성한 계정으로 로그인하세요.</p>
+      <label class="form-label" for="login-name">사용자 ID</label>
+      <input class="form-input" id="login-name" name="username" required autocomplete="username" placeholder="admin">
+      <label class="form-label" for="login-password">비밀번호</label>
+      <input class="form-input" id="login-password" name="password" type="password" required autocomplete="current-password" placeholder="비밀번호 입력">
+      <button type="submit" class="login-submit" id="login-submit">로그인</button>
+      <div id="login-error" role="alert"></div>
+      <div class="footnote">로컬 실습용 UI · JWT는 페이지 메모리에만 보관합니다.<br>새로고침하면 다시 로그인해야 합니다.</div>
+    </form>
+  </div>
+
+  <script>
+    'use strict';
+    const API_URL = 'http://127.0.0.1:8000';
+    const $ = (selector) => document.querySelector(selector);
+    const thread = $('#thread');
+    const body = $('#workspace-body');
+    const queryInput = $('#query');
+    const sendButton = $('#send');
+
+    let token = null;
+    let username = null;
+    let sessionId = null;
+    let busy = false;
+    let timer = null;
+
+    function sessionKey(user) { return `ai-minip-step24-session:${user}`; }
+    function sessionIdValid(id) { return /^[0-9a-f]{32}$/.test(id); }
+    function scrollBottom() { body.scrollTop = body.scrollHeight; }
+    function setServerState(online) {
+      $('#server-state').classList.toggle('online', online);
+      $('#server-state').classList.toggle('offline', !online);
+      $('#server-label').textContent = online ? 'FastAPI 연결됨' : 'FastAPI 연결 실패';
+    }
+    function setBusy(value) {
+      busy = value;
+      const ready = Boolean(token && sessionId);
+      sendButton.disabled = value || !ready;
+      queryInput.disabled = value || !ready;
+      $('#new-session').disabled = value || !token;
+      $('#reset').disabled = value || !ready;
+      $('#copy-id').disabled = value || !ready;
+      $('#use-existing').disabled = value || !token;
+      $('#logout').disabled = value || !token;
+      document.querySelectorAll('.example').forEach((el) => { el.disabled = value || !ready; });
+      $('#hint').textContent = value ? '조사 중입니다. 응답은 완료 후 한 번에 표시됩니다.' : (ready ? 'Enter 전송 · Shift+Enter 줄바꿈' : '로그인 후 요청을 보낼 수 있습니다.');
+    }
+    function notify(message) {
+      const el = document.createElement('div');
+      el.className = 'system-note';
+      el.textContent = message;
+      thread.append(el);
+      scrollBottom();
+    }
+    function clearMessages() {
+      thread.replaceChildren();
+    }
+    function clearHero() {
+      const hero = $('#hero');
+      if (hero) hero.remove();
+    }
+    function createInline(parent, value) {
+      const matcher = /(\*\*([^*]+)\*\*|`([^`]+)`|\[(S\d+)\])/g;
+      let pos = 0;
+      for (const match of value.matchAll(matcher)) {
+        if (match.index > pos) parent.append(document.createTextNode(value.slice(pos, match.index)));
+        let node;
+        if (match[2]) { node = document.createElement('strong'); node.textContent = match[2]; }
+        else if (match[3]) { node = document.createElement('code'); node.textContent = match[3]; }
+        else { node = document.createElement('span'); node.className = 'source-ref'; node.textContent = `[${match[4]}]`; }
+        parent.append(node);
+        pos = match.index + match[0].length;
+      }
+      if (pos < value.length) parent.append(document.createTextNode(value.slice(pos)));
+    }
+    // 서버의 Markdown 응답을 HTML 문자열로 변환하지 않고 안전한 DOM 노드로 표시
+    function renderMarkdown(parent, text) {
+      const lines = String(text || '').replace(/\r\n/g, '\n').split('\n');
+      let list = null, listType = '', code = null;
+      for (const line of lines) {
+        if (/^\s*```/.test(line)) {
+          list = null; listType = '';
+          if (code) { code = null; }
+          else { const pre = document.createElement('pre'); code = document.createElement('code'); pre.append(code); parent.append(pre); }
+          continue;
+        }
+        if (code) { code.textContent += (code.textContent ? '\n' : '') + line; continue; }
+        if (!line.trim()) { list = null; listType = ''; continue; }
+        const header = line.match(/^(#{1,3})\s+(.+)$/);
+        if (header) {
+          list = null; listType = '';
+          const h = document.createElement(header[1].length === 1 ? 'h2' : 'h3');
+          createInline(h, header[2]); parent.append(h); continue;
+        }
+        const bullet = line.match(/^\s*[-*]\s+(.+)$/);
+        const number = line.match(/^\s*\d+[.)]\s+(.+)$/);
+        if (bullet || number) {
+          const type = bullet ? 'ul' : 'ol';
+          if (!list || listType !== type) { list = document.createElement(type); listType = type; parent.append(list); }
+          const item = document.createElement('li'); createInline(item, (bullet || number)[1]); list.append(item); continue;
+        }
+        list = null; listType = '';
+        const p = document.createElement('p'); createInline(p, line); parent.append(p);
+      }
+    }
+    function appendMessage(role, content) {
+      clearHero();
+      const wrapper = document.createElement('article');
+      wrapper.className = 'msg' + (role === '사용자' ? ' user' : '');
+      if (role !== '사용자') { const avatar = document.createElement('div'); avatar.className = 'avatar'; avatar.textContent = 'AI'; wrapper.append(avatar); }
+      const main = document.createElement('div'); main.className = 'msg-main';
+      const label = document.createElement('div'); label.className = 'msg-head'; label.textContent = role;
+      const bubble = document.createElement('div'); bubble.className = 'bubble';
+      if (role === 'Agent') renderMarkdown(bubble, content);
+      else bubble.textContent = content;
+      main.append(label, bubble);
+      if (role === 'Agent') {
+        const actions = document.createElement('div'); actions.className = 'msg-actions';
+        const copy = document.createElement('button'); copy.type = 'button'; copy.className = 'text-button'; copy.textContent = '결과 복사';
+        copy.addEventListener('click', async () => {
+          try { await navigator.clipboard.writeText(content); copy.textContent = '복사됨'; }
+          catch { copy.textContent = '복사 실패'; }
+        });
+        actions.append(copy); main.append(actions);
+      }
+      wrapper.append(main); thread.append(wrapper); scrollBottom();
+    }
+    function setTargets(targets) {
+      const area = $('#targets'); area.replaceChildren();
+      if (!Array.isArray(targets) || !targets.length) { area.textContent = '아직 확인된 서비스 없음'; return; }
+      for (const name of targets) { const span = document.createElement('span'); span.className = 'target-chip'; span.textContent = name; area.append(span); }
+    }
+    function setSession(id, restored = false) {
+      sessionId = id;
+      if (username) localStorage.setItem(sessionKey(username), id);
+      $('#session-id').textContent = id;
+      $('#session-state').textContent = restored ? '저장된 세션 ID입니다. 다음 채팅 요청 시 서버에서 확인합니다.' : '새 세션이 생성되었습니다.';
+      setTargets([]);
+      setBusy(false);
+    }
+    function readableError(body, status) {
+      const detail = body?.detail;
+      if (typeof detail === 'string') return `HTTP ${status} · ${detail}`;
+      if (Array.isArray(detail)) return `HTTP ${status} · ${detail.map((x) => x.msg || '입력 오류').join(', ')}`;
+      return `HTTP ${status} · 요청 처리 실패`;
+    }
+    async function api(path, options = {}, auth = true) {
+      const headers = new Headers(options.headers || {});
+      if (auth && token) headers.set('Authorization', `Bearer ${token}`);
+      let response;
+      try { response = await fetch(API_URL + path, { ...options, headers }); }
+      catch { setServerState(false); throw new Error('FastAPI에 연결할 수 없습니다. 서버와 5500번 포트를 확인하세요.'); }
+      setServerState(true);
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        if (response.status === 401 && auth) showLogin('인증이 만료되었거나 유효하지 않습니다. 다시 로그인하세요.');
+        throw new Error(readableError(data, response.status));
+      }
+      return data;
+    }
+    function showLogin(message = '') {
+      token = null; username = null; sessionId = null;
+      $('#username').textContent = '로그인 필요';
+      $('#session-id').textContent = '세션 없음';
+      $('#session-state').textContent = '로그인 후 세션을 생성합니다.';
+      $('#login-password').value = '';
+      $('#login-error').textContent = message;
+      $('#login-overlay').classList.remove('hidden');
+      setTargets([]); setBusy(false);
+      $('#login-name').focus();
+    }
+    async function createSession() {
+      const data = await api('/session', { method: 'POST' });
+      setSession(data.session_id);
+      clearMessages();
+      notify('새 세션이 생성되었습니다. 기존 장애 맥락은 이어지지 않습니다.');
+    }
+    async function send(text) {
+      if (busy || !token || !sessionId) return;
+      text = text.trim();
+      if (!text || text.length > 500) return;
+      appendMessage('사용자', text);
+      queryInput.value = ''; $('#counter').textContent = '0 / 500';
+      setBusy(true);
+      const loading = document.createElement('div'); loading.className = 'loading';
+      const spinner = document.createElement('span'); spinner.className = 'spinner';
+      const label = document.createElement('span'); label.textContent = 'Agent 실행 중 · 0초';
+      loading.append(spinner, label); thread.append(loading); scrollBottom();
+      const start = Date.now();
+      timer = setInterval(() => { label.textContent = `Agent 실행 중 · ${Math.floor((Date.now() - start) / 1000)}초`; }, 1000);
+      try {
+        const data = await api('/chat', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ session_id: sessionId, query: text }),
+        });
+        appendMessage('Agent', data.result || '응답 내용이 없습니다.');
+        setTargets(data.last_targets);
+        $('#session-state').textContent = data.awaiting_clarification
+          ? `서비스 확인 대기 · 잘못된 입력 ${data.clarification_attempts}/3`
+          : '세션 유지 중 · SQLite에 대화 상태 저장';
+        if (data.awaiting_clarification) notify(`서비스 선택을 기다리고 있습니다. (오류 ${data.clarification_attempts}/3)`);
+      } catch (error) {
+        appendMessage('오류', error.message);
+      } finally {
+        clearInterval(timer); loading.remove(); setBusy(false); queryInput.focus(); scrollBottom();
+      }
+    }
+    async function resetContext() {
+      if (busy || !sessionId || !confirm('현재 세션의 저장된 장애 맥락을 초기화할까요?')) return;
+      setBusy(true);
+      try {
+        const data = await api('/chat', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ session_id: sessionId, query: '/reset' }),
+        });
+        clearMessages(); notify(data.result || '세션 맥락이 초기화되었습니다.');
+        setTargets(data.last_targets); $('#session-state').textContent = '맥락 초기화 완료 · 세션 ID 유지';
+      } catch (error) { appendMessage('오류', error.message); }
+      finally { setBusy(false); }
+    }
+
+    $('#login-form').addEventListener('submit', async (event) => {
+      event.preventDefault();
+      const user = $('#login-name').value.trim();
+      const password = $('#login-password').value;
+      $('#login-error').textContent = '';
+      $('#login-submit').disabled = true;
+      try {
+        const data = await api('/token', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: new URLSearchParams({ username: user, password }),
+        }, false);
+        token = data.access_token;
+        const profile = await api('/users/me');
+        username = profile.username;
+        $('#username').textContent = username;
+        $('#login-overlay').classList.add('hidden');
+        const previous = localStorage.getItem(sessionKey(username));
+        if (previous && sessionIdValid(previous)) {
+          setSession(previous, true);
+          clearMessages();
+          notify('이전 세션 ID를 불러왔습니다. SQLite의 맥락은 서버에 보관되지만, 화면의 과거 대화는 복원되지 않습니다.');
+        } else {
+          await createSession();
+        }
+        queryInput.focus();
+      } catch (error) {
+        if (!username) showLogin(error.message);
+        else appendMessage('오류', error.message);
+      } finally { $('#login-submit').disabled = false; }
+    });
+    $('#logout').addEventListener('click', () => {
+      if (busy) return;
+      clearMessages(); showLogin();
+    });
+    $('#new-session').addEventListener('click', async () => {
+      if (busy || !token || (sessionId && !confirm('새 세션을 시작하시겠습니까? 기존 세션은 DB에 남아 있습니다.'))) return;
+      setBusy(true);
+      try { await createSession(); }
+      catch (error) { appendMessage('오류', error.message); }
+      finally { setBusy(false); }
+    });
+    $('#use-existing').addEventListener('click', () => {
+      if (busy || !token) return;
+      const id = $('#existing-id').value.trim().toLowerCase();
+      if (!sessionIdValid(id)) { alert('32자리의 유효한 세션 ID를 입력하세요.'); return; }
+      setSession(id, true); clearMessages();
+      notify('기존 세션 ID를 선택했습니다. 다음 요청 시 서버가 존재 여부와 사용자 소유권을 확인합니다.');
+      $('#existing-id').value = '';
+    });
+    $('#copy-id').addEventListener('click', async () => {
+      if (!sessionId) return;
+      try { await navigator.clipboard.writeText(sessionId); $('#copy-id').textContent = '복사됨'; }
+      catch { $('#copy-id').textContent = '복사 실패'; }
+      setTimeout(() => { $('#copy-id').textContent = '번호 복사'; }, 1300);
+    });
+    $('#reset').addEventListener('click', resetContext);
+    sendButton.addEventListener('click', () => send(queryInput.value));
+    queryInput.addEventListener('keydown', (event) => {
+      if (event.key === 'Enter' && !event.shiftKey && !event.isComposing) {
+        event.preventDefault(); send(queryInput.value);
+      }
+    });
+    queryInput.addEventListener('input', () => { $('#counter').textContent = `${queryInput.value.length} / 500`; });
+    document.querySelectorAll('[data-example]').forEach((button) => {
+      button.addEventListener('click', () => {
+        if (!token || busy) return;
+        queryInput.value = button.dataset.example;
+        $('#counter').textContent = `${queryInput.value.length} / 500`;
+        queryInput.focus();
+      });
+    });
+    (async () => {
+      try { const response = await fetch(API_URL + '/openapi.json'); setServerState(response.ok); }
+      catch { setServerState(false); }
+    })();
+  </script>
+</body>
+</html>
